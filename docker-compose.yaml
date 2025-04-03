@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  github-projects-agile:
+    image: oven/bun:latest
+    container_name: github-projects-agile
+    working_dir: /app
+    ports:
+      - "3000:3000"
+    volumes:
+      - burndown-data:/app/burndown
+    environment:
+      - NODE_ENV=production
+    command: >
+      bash -c "apt-get update && apt-get install -y git curl libcairo2-dev libpango1.0-dev libjpeg-dev libgif-dev librsvg2-dev fonts-liberation fonts-noto-cjk &&
+              git clone https://github.com/xxxbrian/github-projects-agile.git /tmp/repo &&
+              cp -r /tmp/repo/* /app/ &&
+              rm -rf /tmp/repo &&
+              mkdir -p /app/burndown &&
+              cd /app/frontend &&
+              bun install &&
+              bun run build &&
+              cd /app &&
+              bun install &&
+              bun run start"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+volumes:
+  burndown-data:
+    driver: local
