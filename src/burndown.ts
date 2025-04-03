@@ -4,36 +4,7 @@ import * as fs from "fs";
 import { createCanvas } from "canvas";
 import { Chart } from "chart.js/auto";
 
-// Parse command line arguments and run
 export async function createBurndownChart(token: string, projectId: string, endDateStr?: string) {
-  // Get token, project ID, and end date from environment or command line
-  // let token = process.env.GITHUB_TOKEN || "";
-  // let projectId = process.env.PROJECT_ID || "";
-  // let endDateStr = process.env.END_DATE;
-
-  // // Check if arguments were provided at the command line
-  // if (process.argv.length > 2) {
-  //   const args = process.argv.slice(2);
-  //   for (let i = 0; i < args.length; i++) {
-  //     if (args[i] === "--token" && i + 1 < args.length) {
-  //       token = args[i + 1];
-  //       i++;
-  //     } else if (args[i] === "--project-id" && i + 1 < args.length) {
-  //       projectId = args[i + 1];
-  //       i++;
-  //     } else if (args[i] === "--end-date" && i + 1 < args.length) {
-  //       endDateStr = args[i + 1];
-  //       i++;
-  //     }
-  //   }
-  // }
-
-  // if (!token || !projectId) {
-  //   console.error("Please provide token and project ID via environment variables or command-line arguments:");
-  //   console.error("  GITHUB_TOKEN and PROJECT_ID environment variables");
-  //   console.error("  OR --token and --project-id command-line arguments");
-  //   process.exit(1);
-  // }
 
   // Default to today if no end date provided
   const endDate = endDateStr ? new Date(endDateStr) : new Date();
@@ -303,9 +274,3 @@ async function generateBurndownChart(burndownData, projectTitle) {
   // Convert canvas to buffer
   return canvas.toBuffer("image/png");
 }
-
-// // Start the program
-// main().catch(error => {
-//   console.error("Error:", error);
-//   process.exit(1);
-// });
