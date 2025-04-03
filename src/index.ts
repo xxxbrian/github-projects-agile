@@ -7,6 +7,8 @@ import { createBurndownChart } from './burndown';
 const app = new Hono()
 app.use(logger())
 
+app.get('/*', serveStatic({ root: './frontend/dist' }))
+
 app.get('/burndown', async(c) => {
   let token = c.req.query('token')
   const projectId = c.req.query('project-id')
