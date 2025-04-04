@@ -2,7 +2,11 @@
 import { getProjectItems } from "./github";
 import * as fs from "fs";
 import { createCanvas } from "canvas";
-import { Chart } from "chart.js/auto";
+import { Chart, ChartConfiguration } from "chart.js/auto";
+import annotationPlugin from 'chartjs-plugin-annotation';
+
+// Register the annotation plugin
+Chart.register(annotationPlugin);
 
 export async function createBurndownChart(token: string, projectId: string, endDateStr?: string) {
 
@@ -184,8 +188,24 @@ async function generateBurndownChart(burndownData, projectTitle) {
   // Format x-axis labels to be more readable (MM/DD format)
   const displayLabels = burndownData.dates.map(dateStr => formatDisplayDate(dateStr));
 
-  // Create chart
-  new Chart(ctx, {
+  // Get current date in the same format as our dates array
+  const currentDate = new Date();
+  const currentDateStr = formatDate(currentDate);
+  
+  // Find the index of the current date in our dates array
+  const currentDateIndex = burndownData.dates.indexOf(currentDateStr);
+  
+  // If current date is before the end date, adjust the actual data to stop at current date
+  let actualData = [...burndownData.actual];
+  if (currentDate < burndownData.endDate && currentDateIndex !== -1) {
+    // Keep data up to current date, set the rest to null (Chart.js will not draw null values)
+    for (let i = currentDateIndex + 1; i < actualData.length; i++) {
+      actualData[i] = null;
+    }
+  }
+
+  // Configure chart with annotations
+  const config: ChartConfiguration = {
     type: "line",
     data: {
       labels: displayLabels,
@@ -200,7 +220,7 @@ async function generateBurndownChart(burndownData, projectTitle) {
         },
         {
           label: "Actual Burndown",
-          data: burndownData.actual,
+          data: actualData,
           borderColor: "rgba(255, 99, 132, 1)",
           backgroundColor: "rgba(255, 99, 132, 0.2)",
           tension: 0.1,
@@ -267,9 +287,33 @@ async function generateBurndownChart(burndownData, projectTitle) {
             }
           }
         },
+        annotation: {
+          annotations: currentDateIndex !== -1 ? {
+            currentDateLine: {
+              type: 'line',
+              xMin: currentDateIndex,
+              xMax: currentDateIndex,
+              borderColor: 'rgba(75, 192, 192, 0.8)',
+              borderWidth: 2,
+              borderDash: [3, 3],
+              label: {
+                display: true,
+                content: 'Current Date',
+                position: 'start',
+                backgroundColor: 'rgba(75, 192, 192, 0.8)',
+                font: {
+                  size: 11
+                }
+              }
+            }
+          } : {}
+        }
       },
     },
-  });
+  };
+
+  // Create chart with configuration
+  new Chart(ctx, config);
 
   // Convert canvas to buffer
   return canvas.toBuffer("image/png");
