@@ -4,14 +4,20 @@ import * as fs from "fs";
 import { createCanvas } from "canvas";
 import { Chart, ChartConfiguration } from "chart.js/auto";
 import annotationPlugin from 'chartjs-plugin-annotation';
+import { formatInTimeZone } from 'date-fns-tz';
 
 // Register the annotation plugin
 Chart.register(annotationPlugin);
 
-export async function createBurndownChart(token: string, projectId: string, endDateStr?: string) {
+export async function createBurndownChart(token: string, projectId: string, endDateStr?: string, timezone?: string) {
+
+  // Default to Melbourne timezone if none provided
+  if (!timezone) {
+    timezone = 'Australia/Melbourne';
+  }
 
   // Default to today if no end date provided
-  const endDate = endDateStr ? new Date(endDateStr) : new Date();
+  const endDate = endDateStr ? new Date(formatInTimeZone(endDateStr, timezone, 'yyyy-MM-dd')) : new Date();
 
   console.log(`Generating burndown chart with end date: ${formatDate(endDate)}`);
 
