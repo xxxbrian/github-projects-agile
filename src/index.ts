@@ -24,8 +24,12 @@ app.get('/burndown', async(c) => {
     token = ENV_GITHUB_TOKEN
   }
 
-  if (!token || !projectId) {
-    return c.json({ error: 'Please provide token and project ID' }, 400);
+  if (!projectId) {
+    return c.json({ error: 'Please provide project ID' }, 400);
+  }
+
+  if (!token) {
+    return c.json({ error: 'Project ID is not in the white list, please provide token' }, 400);
   }
 
   const uuid = await createBurndownChart(token, projectId, endDate, timezone);
