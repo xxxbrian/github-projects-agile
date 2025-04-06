@@ -79,10 +79,10 @@ function calculateBurndownData(projectData: ProjectV2Data, endDate: Date) {
     totalStoryPoints += storyPoints;
 
     // Get creation date
-    const creationDate = new Date(item.createdAt);
-    if (creationDate < startDate) {
-      startDate = creationDate;
-    }
+    // const creationDate = new Date(item.createdAt);
+    // if (creationDate < startDate) {
+    //   startDate = creationDate;
+    // }
   });
 
   // Initialize daily points with total at start
