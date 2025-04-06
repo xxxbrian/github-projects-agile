@@ -292,7 +292,7 @@ async function graphqlRequest(token: string, query: string, variables: any = {})
   return data.data;
 }
 
-export async function getProjectItems(token: string, projectId: string) {
+export async function getProjectItems(token: string, projectId: string): Promise<ProjectV2Data | null> {
   // read the query from the file
   // const query = fs.readFileSync('get-project-items.gql', 'utf-8');
   const variables = {
@@ -301,32 +301,32 @@ export async function getProjectItems(token: string, projectId: string) {
     fieldValuesCursor: null,
   };
   const data = await graphqlRequest(token, QUERY, variables);
-  const projectNode = data.node;
-  if (projectNode && projectNode.__typename === "ProjectV2") {
-    console.log(`Project Title: ${projectNode.title}`);
+  const projectNode = data.node as ProjectV2Data | null;
+  // if (projectNode) {
+  //   console.log(`Project Title: ${projectNode.title}`);
 
-    // NOTE: Need pagination logic here to get all items
-    const itemsPage = projectNode.items.nodes;
+  //   // NOTE: Need pagination logic here to get all items
+  //   const itemsPage = projectNode.items.nodes;
 
-    for (const item of itemsPage) {
-      console.log(`  Item ID: ${item.id}, Type: ${item.type}`);
-      if (item.content) {
-        // Access content based on its type
-        if (item.content.__typename === 'Issue' || item.content.__typename === 'PullRequest' || item.content.__typename === 'DraftIssue') {
-          console.log(`    Title: ${item.content.title}`);
-        }
-      }
+  //   for (const item of itemsPage) {
+  //     console.log(`  Item ID: ${item.id}, Type: ${item.type}`);
+  //     if (item.content) {
+  //       // Access content based on its type
+  //       if (item.content.__typename === 'Issue' || item.content.__typename === 'PullRequest' || item.content.__typename === 'DraftIssue') {
+  //         console.log(`    Title: ${item.content.title}`);
+  //       }
+  //     }
 
-      // NOTE: Need pagination logic here to get all field values
-      const fieldValuesPage = item.fieldValues.nodes;
-      for (const fieldValue of fieldValuesPage) {
-          console.log(`    Field (${fieldValue.field.name}):`, fieldValue);
-          // You can switch on fieldValue.__typename to handle specific value types
-      }
-    }
-  } else {
-      console.log("Project not found or not a ProjectV2 type.");
-  }
+  //     // NOTE: Need pagination logic here to get all field values
+  //     const fieldValuesPage = item.fieldValues.nodes;
+  //     for (const fieldValue of fieldValuesPage) {
+  //         console.log(`    Field (${fieldValue.field.name}):`, fieldValue);
+  //         // You can switch on fieldValue.__typename to handle specific value types
+  //     }
+  //   }
+  // } else {
+  //   console.log("Project not found or not a ProjectV2 type.");
+  // }
 
   return projectNode;
 }

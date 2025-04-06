@@ -1,5 +1,5 @@
 // index.ts
-import { getProjectItems } from "./github";
+import { getProjectItems, ProjectV2Data, ProjectV2ItemFieldNumberValueNode } from "./github";
 import * as fs from "fs";
 import { createCanvas } from "canvas";
 import { Chart, ChartConfiguration } from "chart.js/auto";
@@ -21,7 +21,7 @@ export async function createBurndownChart(token: string, projectId: string, endD
 
   if (!projectData) {
     console.error("Failed to fetch project data or project not found.");
-    process.exit(1);
+    return null;
   }
 
   // Process data for burndown chart
@@ -46,7 +46,7 @@ export async function createBurndownChart(token: string, projectId: string, endD
 }
 
 // Calculate burndown data from project items
-function calculateBurndownData(projectData, endDate) {
+function calculateBurndownData(projectData: ProjectV2Data, endDate: Date) {
   // Extract items
   // Note: For projects with many items, you'll need to implement pagination
   // by checking items.pageInfo.hasNextPage and using items.pageInfo.endCursor
@@ -56,7 +56,7 @@ function calculateBurndownData(projectData, endDate) {
   let totalStoryPoints = 0;
 
   // Map to track daily remaining points
-  const dailyRemainingPoints = new Map();
+  const dailyBurnPoints = new Map();
 
   // Get the start date (earliest creation date)
   let startDate = new Date(endDate);
@@ -69,7 +69,7 @@ function calculateBurndownData(projectData, endDate) {
       field => field.field?.name === "Estimate"
     );
 
-    const storyPoints = estimateField?.number || 0;
+    const storyPoints = (estimateField as ProjectV2ItemFieldNumberValueNode)?.number || 0;
     totalStoryPoints += storyPoints;
 
     // Get creation date
@@ -82,7 +82,7 @@ function calculateBurndownData(projectData, endDate) {
   // Initialize daily points with total at start
   const dateArray = generateDateArray(startDate, endDate);
   dateArray.forEach(date => {
-    dailyRemainingPoints.set(formatDate(date), totalStoryPoints);
+    dailyBurnPoints.set(formatDate(date), 0);
   });
 
   // Update daily remaining points based on item completion
@@ -90,36 +90,32 @@ function calculateBurndownData(projectData, endDate) {
     const estimateField = item.fieldValues.nodes.find(
       field => field.field?.name === "Estimate"
     );
-    const storyPoints = estimateField?.number || 0;
-
+    const storyPoints = (estimateField as ProjectV2ItemFieldNumberValueNode)?.number || 0;
     // If the item is closed, reduce points on that day
     if (item.content && item.content.closedAt) {
       const closedDate = new Date(item.content.closedAt);
       if (closedDate <= endDate) {
         const closedDateStr = formatDate(closedDate);
-        if (dailyRemainingPoints.has(closedDateStr)) {
-          dailyRemainingPoints.set(
+        if (dailyBurnPoints.has(closedDateStr)) {
+          dailyBurnPoints.set(
             closedDateStr,
-            dailyRemainingPoints.get(closedDateStr) - storyPoints
+            dailyBurnPoints.get(closedDateStr) + storyPoints
           );
         }
       }
     }
   });
 
+
   // Fill in the actual burndown line by propagating values forward
+  const actualBurnDown = []
   let previousValue = totalStoryPoints;
   for (const date of dateArray) {
     const dateStr = formatDate(date);
-    const currentValue = dailyRemainingPoints.get(dateStr);
-
-    if (currentValue === totalStoryPoints) {
-      // No change on this day, use previous value
-      dailyRemainingPoints.set(dateStr, previousValue);
-    } else {
-      // Update previous value for next iteration
-      previousValue = currentValue;
-    }
+    const burnPoints = dailyBurnPoints.get(dateStr);
+    const currentValue = previousValue - (burnPoints || 0);
+    actualBurnDown.push(currentValue);
+    previousValue = currentValue;
   }
 
   // Calculate ideal burndown (straight line from start to end)
@@ -127,7 +123,7 @@ function calculateBurndownData(projectData, endDate) {
 
   return {
     dates: dateArray.map(date => formatDate(date)),
-    actual: dateArray.map(date => dailyRemainingPoints.get(formatDate(date))),
+    actual: actualBurnDown,
     ideal: idealBurndown,
     totalStoryPoints,
     startDate,
@@ -191,10 +187,10 @@ async function generateBurndownChart(burndownData, projectTitle) {
   // Get current date in the same format as our dates array
   const currentDate = new Date();
   const currentDateStr = formatDate(currentDate);
-  
+
   // Find the index of the current date in our dates array
   const currentDateIndex = burndownData.dates.indexOf(currentDateStr);
-  
+
   // If current date is before the end date, adjust the actual data to stop at current date
   let actualData = [...burndownData.actual];
   if (currentDate < burndownData.endDate && currentDateIndex !== -1) {
