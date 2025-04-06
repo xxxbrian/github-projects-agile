@@ -13,6 +13,7 @@ app.get('/burndown', async(c) => {
   let token = c.req.query('token')
   const projectId = c.req.query('project-id')
   const endDate = c.req.query('end-date')
+  const timezone = c.req.query('timezone')
 
   const { ENV_PROJECT_WHITE_LIST } = env<{ ENV_PROJECT_WHITE_LIST: string }>(c)
   const { ENV_GITHUB_TOKEN } = env<{ ENV_GITHUB_TOKEN: string }>(c)
@@ -27,7 +28,7 @@ app.get('/burndown', async(c) => {
     return c.json({ error: 'Please provide token and project ID' }, 400);
   }
 
-  const uuid = await createBurndownChart(token, projectId, endDate);
+  const uuid = await createBurndownChart(token, projectId, endDate, timezone);
 
   // return image path
   return c.json({ burndownChart: `/burndown/${uuid}.png` });
