@@ -98,8 +98,20 @@ function calculateBurndownData(projectData: ProjectV2Data, endDate: Date) {
     );
     const storyPoints = (estimateField as ProjectV2ItemFieldNumberValueNode)?.number || 0;
     // If the item is closed, reduce points on that day
+    let closedDate = null;
     if (item.content && item.content.closedAt) {
-      const closedDate = new Date(item.content.closedAt);
+      closedDate = new Date(item.content.closedAt);
+    }
+    // issue body has <closed-at>YYYY-MM-DD</closed-at>
+    if (item.content && item.content.body) {
+      console.log(item.content.body);
+      const closedAtRegex = /<closed-at>(\d{4}-\d{2}-\d{2})<\/closed-at>/;
+      const match = item.content.body.match(closedAtRegex);
+      if (match) {
+        closedDate = new Date(match[1]);
+      }
+    }
+    if (closedDate){
       if (closedDate <= endDate) {
         const closedDateStr = formatDate(closedDate);
         if (dailyBurnPoints.has(closedDateStr)) {
