@@ -1,5 +1,5 @@
 // index.ts
-import { getProjectItems, ProjectV2Data, ProjectV2ItemFieldNumberValueNode } from "./github";
+import { getProjectItems, IssueContent, ProjectV2Data, ProjectV2ItemFieldNumberValueNode } from "./github";
 import * as fs from "fs";
 import { createCanvas } from "canvas";
 import { Chart, ChartConfiguration } from "chart.js/auto";
@@ -9,7 +9,7 @@ import { formatInTimeZone } from 'date-fns-tz';
 // Register the annotation plugin
 Chart.register(annotationPlugin);
 
-export async function createBurndownChart(token: string, projectId: string, endDateStr?: string, timezone?: string) {
+export async function createBurndownChart(token: string, projectId: string, endDateStr?: string, timezone?: string, label?: string) {
 
   // Default to Melbourne timezone if none provided
   if (!timezone) {
@@ -32,7 +32,7 @@ export async function createBurndownChart(token: string, projectId: string, endD
 
   // Process data for burndown chart
   console.log("Calculating burndown data...");
-  const burndownData = calculateBurndownData(projectData, endDate);
+  const burndownData = calculateBurndownData(projectData, endDate, label);
 
   // Generate chart image
   console.log("Generating chart...");
@@ -52,7 +52,7 @@ export async function createBurndownChart(token: string, projectId: string, endD
 }
 
 // Calculate burndown data from project items
-function calculateBurndownData(projectData: ProjectV2Data, endDate: Date) {
+function calculateBurndownData(projectData: ProjectV2Data, endDate: Date, sprintLabel?: string) {
   // Extract items
   // Note: For projects with many items, you'll need to implement pagination
   // by checking items.pageInfo.hasNextPage and using items.pageInfo.endCursor
@@ -76,7 +76,13 @@ function calculateBurndownData(projectData: ProjectV2Data, endDate: Date) {
     );
 
     const storyPoints = (estimateField as ProjectV2ItemFieldNumberValueNode)?.number || 0;
-    totalStoryPoints += storyPoints;
+    if (sprintLabel) {
+      if ((item.content as IssueContent).labels.nodes.find(label => label.name === sprintLabel)) {
+        totalStoryPoints += storyPoints;
+      }
+    } else {
+      totalStoryPoints += storyPoints;
+    }
 
     // Get creation date
     // const creationDate = new Date(item.createdAt);
@@ -104,7 +110,6 @@ function calculateBurndownData(projectData: ProjectV2Data, endDate: Date) {
     }
     // issue body has <closed-at>YYYY-MM-DD</closed-at>
     if (item.content && item.content.body) {
-      console.log(item.content.body);
       const closedAtRegex = /<closed-at>(\d{4}-\d{2}-\d{2})<\/closed-at>/;
       const match = item.content.body.match(closedAtRegex);
       if (match) {

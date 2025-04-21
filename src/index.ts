@@ -14,6 +14,7 @@ app.get('/burndown', async(c) => {
   const projectId = c.req.query('project-id')
   const endDate = c.req.query('end-date')
   const timezone = c.req.query('timezone')
+  const sprintLabel = c.req.query('sprint-label')
 
   const { ENV_PROJECT_WHITE_LIST } = env<{ ENV_PROJECT_WHITE_LIST: string }>(c)
   const { ENV_GITHUB_TOKEN } = env<{ ENV_GITHUB_TOKEN: string }>(c)
@@ -32,7 +33,7 @@ app.get('/burndown', async(c) => {
     return c.json({ error: 'Project ID is not in the white list, please provide token' }, 400);
   }
 
-  const uuid = await createBurndownChart(token, projectId, endDate, timezone);
+  const uuid = await createBurndownChart(token, projectId, endDate, timezone, sprintLabel);
 
   // return image path
   return c.json({ burndownChart: `/burndown/${uuid}.png` });

@@ -19,6 +19,7 @@ const formSchema = z.object({
   projectId: z.string().min(1, { message: 'Project ID is required' }),
   token: z.string().optional(),
   endTime: z.date().optional(),
+  sprintLabel: z.string().optional(),
 })
 
 type FormValues = z.infer<typeof formSchema>
@@ -56,6 +57,10 @@ function App() {
       if (data.endTime) {
         const formattedDate = format(data.endTime, 'yyyy-MM-dd')
         params.append('end-date', formattedDate)
+      }
+
+      if (data.sprintLabel) {
+        params.append('sprint-label', data.sprintLabel)
       }
 
       // Make API request
@@ -189,6 +194,23 @@ function App() {
                         </Popover>
                         <FormDescription>
                           Optional end date for the burndown chart (defaults to today)
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="sprintLabel"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Sprint Label</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Enter sprint label" {...field} />
+                        </FormControl>
+                        <FormDescription>
+                          Optional sprint label to filter by
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
